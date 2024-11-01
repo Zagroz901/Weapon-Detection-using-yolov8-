@@ -1,0 +1,55 @@
+<!-- app/template/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weapon Detection</title>
+</head>
+<body>
+    <h1>Weapon Detection Model</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" accept="image/*" required>
+        <button type="button" onclick="submitForm()">Detect Weapon</button>
+    </form>
+    
+    <h3>Detections:</h3>
+    <pre id="result"></pre>
+
+    <script>
+        async function submitForm() {
+            const formData = new FormData(document.getElementById("uploadForm"));
+    
+            const response = await fetch("/detect/", {
+                method: "POST",
+                body: formData
+            });
+    
+            if (response.ok) {
+                const detectionData = response.headers.get("X-Detection-Data");
+                const detections = JSON.parse(detectionData);
+    
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                const imgElement = document.createElement("img");
+                imgElement.src = imageUrl;
+                imgElement.alt = "Detected Image";
+                imgElement.style.maxWidth = "100%";
+                document.getElementById("result").innerHTML = "";
+                document.getElementById("result").appendChild(imgElement);
+    
+                const detectionList = document.createElement("ul");
+                detections.forEach(detection => {
+                    const listItem = document.createElement("li");
+                    listItem.textContent = `${detection.label}: ${detection.confidence.toFixed(2)}`;
+                    detectionList.appendChild(listItem);
+                });
+                document.getElementById("result").appendChild(detectionList);
+            } else {
+                const error = await response.json();
+                document.getElementById("result").textContent = `Error: ${error.error}`;
+            }
+        }
+    </script>
+    
+</body>
+</html>
